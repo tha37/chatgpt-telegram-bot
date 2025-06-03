@@ -1,20 +1,10 @@
 import json
+import importlib
+import inspect
+import os
+import pkgutil
 
-from plugins.gtts_text_to_speech import GTTSTextToSpeech
-from plugins.auto_tts import AutoTextToSpeech
-from plugins.dice import DicePlugin
-from plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
-from plugins.ddg_image_search import DDGImageSearchPlugin
-from plugins.spotify import SpotifyPlugin
-from plugins.crypto import CryptoPlugin
-from plugins.weather import WeatherPlugin
-from plugins.ddg_web_search import DDGWebSearchPlugin
-from plugins.wolfram_alpha import WolframAlphaPlugin
-from plugins.deepl import DeeplTranslatePlugin
-from plugins.worldtimeapi import WorldTimeApiPlugin
-from plugins.whois_ import WhoisPlugin
-from plugins.webshot import WebshotPlugin
-from plugins.iplocation import IpLocationPlugin
+from plugins.plugin import Plugin
 
 
 class PluginManager:
@@ -23,25 +13,27 @@ class PluginManager:
     """
 
     def __init__(self, config):
-        enabled_plugins = config.get('plugins', [])
-        plugin_mapping = {
-            'wolfram': WolframAlphaPlugin,
-            'weather': WeatherPlugin,
-            'crypto': CryptoPlugin,
-            'ddg_web_search': DDGWebSearchPlugin,
-            'ddg_image_search': DDGImageSearchPlugin,
-            'spotify': SpotifyPlugin,
-            'worldtimeapi': WorldTimeApiPlugin,
-            'youtube_audio_extractor': YouTubeAudioExtractorPlugin,
-            'dice': DicePlugin,
-            'deepl_translate': DeeplTranslatePlugin,
-            'gtts_text_to_speech': GTTSTextToSpeech,
-            'auto_tts': AutoTextToSpeech,
-            'whois': WhoisPlugin,
-            'webshot': WebshotPlugin,
-            'iplocation': IpLocationPlugin,
+        enabled_plugins = [p for p in config.get('plugins', []) if p]
+
+        alias = {
+            'wolfram': 'wolfram_alpha',
+            'deepl_translate': 'deepl',
+            'whois': 'whois_',
         }
-        self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
+
+        plugin_dir = os.path.join(os.path.dirname(__file__), 'plugins')
+        available = {}
+        for _, module_name, _ in pkgutil.iter_modules([plugin_dir]):
+            if module_name == 'plugin':
+                continue
+            module = importlib.import_module(f'plugins.{module_name}')
+            for _, obj in inspect.getmembers(module, inspect.isclass):
+                if issubclass(obj, Plugin) and obj is not Plugin:
+                    plugin_name = next((k for k, v in alias.items() if v == module_name), module_name)
+                    available[plugin_name] = obj
+                    break
+
+        self.plugins = [available[name]() for name in enabled_plugins if name in available]
 
     def get_functions_specs(self):
         """

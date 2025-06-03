@@ -30,30 +30,28 @@ O_MODELS = ("o1", "o1-mini", "o1-preview")
 GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS + GPT_4O_MODELS + O_MODELS
 
 def default_max_tokens(model: str) -> int:
-    """
-    Gets the default number of max tokens for the given model.
-    :param model: The model name
-    :return: The default number of max tokens
+    """Return the default ``max_tokens`` value for ``model``.
+
+    Models are grouped by category and mapped to their default token count.
     """
     base = 1200
-    if model in GPT_3_MODELS:
-        return base
-    elif model in GPT_4_MODELS:
-        return base * 2
-    elif model in GPT_3_16K_MODELS:
-        if model == "gpt-3.5-turbo-1106":
-            return 4096
-        return base * 4
-    elif model in GPT_4_32K_MODELS:
-        return base * 8
-    elif model in GPT_4_VISION_MODELS:
+    if model == "gpt-3.5-turbo-1106":
         return 4096
-    elif model in GPT_4_128K_MODELS:
-        return 4096
-    elif model in GPT_4O_MODELS:
-        return 4096
-    elif model in O_MODELS:
-        return 4096
+
+    model_defaults = {
+        GPT_3_MODELS: base,
+        GPT_4_MODELS: base * 2,
+        GPT_3_16K_MODELS: base * 4,
+        GPT_4_32K_MODELS: base * 8,
+        GPT_4_VISION_MODELS: 4096,
+        GPT_4_128K_MODELS: 4096,
+        GPT_4O_MODELS: 4096,
+        O_MODELS: 4096,
+    }
+
+    for models, value in model_defaults.items():
+        if model in models:
+            return value
 
 
 def are_functions_available(model: str) -> bool:
