@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 
 from dotenv import load_dotenv
 
@@ -61,6 +62,16 @@ def main():
         'tts_model': os.environ.get('TTS_MODEL', 'tts-1'),
         'tts_voice': os.environ.get('TTS_VOICE', 'alloy'),
     }
+
+    mcp_servers_env = os.environ.get('OPENAI_MCP_SERVERS')
+    if mcp_servers_env:
+        try:
+            openai_config['mcp_servers'] = json.loads(mcp_servers_env)
+        except json.JSONDecodeError:
+            logging.error('Invalid JSON in OPENAI_MCP_SERVERS')
+            openai_config['mcp_servers'] = []
+    else:
+        openai_config['mcp_servers'] = []
 
     if openai_config['enable_functions'] and not functions_available:
         logging.error(f'ENABLE_FUNCTIONS is set to true, but the model {model} does not support it. '

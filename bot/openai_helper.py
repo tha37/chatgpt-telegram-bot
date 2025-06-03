@@ -242,23 +242,40 @@ class OpenAIHelper:
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
             max_tokens_str = 'max_completion_tokens' if self.config['model'] in O_MODELS else 'max_tokens'
-            common_args = {
-                'model': self.config['model'] if not self.conversations_vision[chat_id] else self.config['vision_model'],
-                'messages': self.conversations[chat_id],
-                'temperature': self.config['temperature'],
-                'n': self.config['n_choices'],
-                max_tokens_str: self.config['max_tokens'],
-                'presence_penalty': self.config['presence_penalty'],
-                'frequency_penalty': self.config['frequency_penalty'],
-                'stream': stream
-            }
+            use_mcp = len(self.config.get('mcp_servers', [])) > 0
+            if use_mcp:
+                input_messages = [
+                    {**m, 'type': 'message'} for m in self.conversations[chat_id]
+                ]
+                common_args = {
+                    'model': self.config['model'],
+                    'input': input_messages,
+                    'temperature': self.config['temperature'],
+                    'max_output_tokens': self.config['max_tokens'],
+                    'tools': self.config['mcp_servers'],
+                    'stream': False  # streaming not yet supported for MCP
+                }
+            else:
+                common_args = {
+                    'model': self.config['model'] if not self.conversations_vision[chat_id] else self.config['vision_model'],
+                    'messages': self.conversations[chat_id],
+                    'temperature': self.config['temperature'],
+                    'n': self.config['n_choices'],
+                    max_tokens_str: self.config['max_tokens'],
+                    'presence_penalty': self.config['presence_penalty'],
+                    'frequency_penalty': self.config['frequency_penalty'],
+                    'stream': stream
+                }
 
-            if self.config['enable_functions'] and not self.conversations_vision[chat_id]:
-                functions = self.plugin_manager.get_functions_specs()
-                if len(functions) > 0:
-                    common_args['functions'] = self.plugin_manager.get_functions_specs()
-                    common_args['function_call'] = 'auto'
-            return await self.client.chat.completions.create(**common_args)
+            if use_mcp:
+                return await self.client.responses.create(**common_args)
+            else:
+                if self.config['enable_functions'] and not self.conversations_vision[chat_id]:
+                    functions = self.plugin_manager.get_functions_specs()
+                    if len(functions) > 0:
+                        common_args['functions'] = self.plugin_manager.get_functions_specs()
+                        common_args['function_call'] = 'auto'
+                return await self.client.chat.completions.create(**common_args)
 
         except openai.RateLimitError as e:
             raise e
