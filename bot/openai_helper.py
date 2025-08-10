@@ -18,7 +18,7 @@ from utils import is_direct_result, encode_image, decode_image
 from plugin_manager import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
-# Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
+# Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
 GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106", "gpt-3.5-turbo-0125")
 GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613", "gpt-4-turbo-preview")
@@ -309,7 +309,7 @@ class OpenAIHelper:
         if is_direct_result(function_response):
             self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name,
                                                 content=json.dumps({'result': 'Done, the content has been sent'
-                                                                              'to the user.'}))
+                                                                               'to the user.'}))
             return function_response, plugins_used
 
         self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name, content=function_response)
@@ -334,7 +334,7 @@ class OpenAIHelper:
                 prompt=prompt,
                 n=1,
                 model=self.config['image_model'],
-                quality=self.config['image_quality'],
+                # quality=self.config['image_quality'], # ဒီလိုင်းကို ဖျက်လိုက်ပါ
                 style=self.config['image_style'],
                 size=self.config['image_size']
             )
@@ -423,7 +423,7 @@ class OpenAIHelper:
             if exceeded_max_tokens or exceeded_max_history_size:
                 logging.info(f'Chat history for chat ID {chat_id} is too long. Summarising...')
                 try:
-                    
+
                     last = self.conversations[chat_id][-1]
                     summary = await self.__summarise(self.conversations[chat_id][:-1])
                     logging.debug(f'Summary: {summary}')
@@ -455,7 +455,7 @@ class OpenAIHelper:
             #     if len(functions) > 0:
             #         common_args['functions'] = self.plugin_manager.get_functions_specs()
             #         common_args['function_call'] = 'auto'
-            
+
             return await self.client.chat.completions.create(**common_args)
 
         except openai.RateLimitError as e:
